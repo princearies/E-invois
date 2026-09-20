@@ -1,0 +1,37 @@
+# Cloudflare Worker Configuration
+# e-Invois Sabah Backend
+#
+# Cara deploy:
+# 1. Install wrangler: npm install -g wrangler
+# 2. Login: wrangler login
+# 3. Create D1 database: wrangler d1 create einvois-db
+# 4. Apply schema: wrangler d1 execute einvois-db --file=schema.sql
+# 5. Deploy: wrangler deploy
+
+name = "einvois-sabah-worker"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+# D1 Database Binding
+[[d1_databases]]
+binding = "DB"
+database_name = "einvois-db"
+database_id = "36e6ad4d-a715-4f2b-8b4a-70ecc5c05fde"
+
+# Environment variables (optional)
+[vars]
+APP_NAME = "e-Invois Sabah"
+SST_RATE = "0.08"
+
+# Production settings
+[env.production]
+name = "einvois-sabah-worker-prod"
+
+# Development settings  
+[env.dev]
+name = "einvois-sabah-worker-dev"
+
+# Routes (uncomment after deploying)
+# routes = [
+#   { pattern = "api.einvois-sabah.com/*", zone_name = "einvois-sabah.com" }
+# ]
