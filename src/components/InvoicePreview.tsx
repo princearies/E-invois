@@ -24,20 +24,20 @@ export default function InvoicePreview({ invoice, onBack }: Props) {
       <div className="no-print flex items-center justify-between mb-4">
         <button
           onClick={onBack}
-          className="flex items-center gap-1.5 text-sm text-slate-600 font-medium hover:text-slate-900 transition-all"
+          className="flex items-center gap-1.5 text-sm text-slate-400 font-medium hover:text-slate-200 transition-all"
         >
           ← Kembali
         </button>
         <div className="flex gap-2">
           <button
             onClick={handleShareWhatsApp}
-            className="px-4 py-2 bg-green-500 text-white rounded-xl text-sm font-medium hover:bg-green-600 transition-all active:scale-[0.98]"
+            className="px-4 py-2 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-500 transition-all active:scale-[0.98]"
           >
             💬 WhatsApp
           </button>
           <button
             onClick={handleDownloadPDF}
-            className="px-4 py-2 bg-sky-500 text-white rounded-xl text-sm font-medium hover:bg-sky-600 transition-all active:scale-[0.98]"
+            className="px-4 py-2 bg-sky-500 text-white rounded-xl text-sm font-medium hover:bg-sky-400 transition-all active:scale-[0.98]"
           >
             📥 PDF
           </button>
@@ -45,7 +45,7 @@ export default function InvoicePreview({ invoice, onBack }: Props) {
       </div>
 
       {/* Invoice Document */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-xl shadow-black/20 overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-sky-600 to-blue-600 px-6 py-5 text-white">
           <div className="flex items-center justify-between">
@@ -185,13 +185,13 @@ export default function InvoicePreview({ invoice, onBack }: Props) {
       <div className="no-print grid grid-cols-2 gap-3 mt-4 pb-6">
         <button
           onClick={() => window.print()}
-          className="py-3 bg-white border-2 border-slate-200 text-slate-700 rounded-xl font-semibold text-sm hover:border-slate-300 transition-all active:scale-[0.98]"
+          className="py-3 bg-slate-800 border border-slate-700 text-slate-200 rounded-xl font-semibold text-sm hover:bg-slate-700 transition-all active:scale-[0.98]"
         >
           🖨 Cetak
         </button>
         <button
           onClick={handleShareWhatsApp}
-          className="py-3 bg-green-500 text-white rounded-xl font-semibold text-sm hover:bg-green-600 transition-all active:scale-[0.98]"
+          className="py-3 bg-green-600 text-white rounded-xl font-semibold text-sm hover:bg-green-500 transition-all active:scale-[0.98]"
         >
           💬 Kongsi WhatsApp
         </button>
