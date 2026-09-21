@@ -1,6 +1,7 @@
 import React from 'react';
 import { Invoice } from '../types';
-import { getInvoices, deleteInvoice, formatCurrency, formatDate } from '../utils/storage';
+import { deleteInvoice, formatCurrency, formatDate } from '../utils/storage';
+import { syncInvoices, deleteInvoiceRemote } from '../utils/api';
 
 interface Props {
   onPreview: (invoice: Invoice) => void;
@@ -9,17 +10,38 @@ interface Props {
 
 export default function InvoiceList({ onPreview, onEdit }: Props) {
   const [invoices, setInvoices] = React.useState<Invoice[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [synced, setSynced] = React.useState(false);
 
   React.useEffect(() => {
-    setInvoices(getInvoices().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+    let cancelled = false;
+    syncInvoices().then(({ invoices: merged, synced: ok }) => {
+      if (cancelled) return;
+      setInvoices(merged);
+      setSynced(ok);
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleDelete = (id: string) => {
     if (confirm('Padam invois ini?')) {
       deleteInvoice(id);
+      void deleteInvoiceRemote(id);
       setInvoices(prev => prev.filter(i => i.id !== id));
     }
   };
+
+  if (loading) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-12 text-center">
+        <div className="text-5xl mb-4 animate-pulse">📋</div>
+        <p className="text-sm text-slate-500">Memuatkan invois…</p>
+      </div>
+    );
+  }
 
   if (invoices.length === 0) {
     return (
@@ -33,9 +55,25 @@ export default function InvoiceList({ onPreview, onEdit }: Props) {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
-      <h2 className="text-lg font-semibold text-slate-200 mb-4">
-        Senarai Invois ({invoices.length})
-      </h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-slate-200">
+          Senarai Invois ({invoices.length})
+        </h2>
+        <span
+          className={`text-[10px] px-2 py-1 rounded-full font-medium ${
+            synced
+              ? 'bg-emerald-900/30 text-emerald-300'
+              : 'bg-amber-900/30 text-amber-300'
+          }`}
+          title={
+            synced
+              ? 'Invois disegerakkan dengan awan (D1)'
+              : 'Mod luar talian — invois disimpan pada peranti sahaja'
+          }
+        >
+          {synced ? '☁️ Disegerak' : '⚠️ Peranti sahaja'}
+        </span>
+      </div>
       <div className="space-y-3">
         {invoices.map(invoice => (
           <div

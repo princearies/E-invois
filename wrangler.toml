@@ -1,0 +1,32 @@
+# Cloudflare Workers - Unified Deployment (Frontend + API)
+# e-Invois Sabah
+#
+# This single Worker serves:
+#   - Static frontend (dist/) at / and all non-API routes
+#   - Backend API (/api/*) handled by worker/src/index.ts
+#   - D1 database binding for invoice storage
+#
+# Deployed automatically via Workers Builds (connected to GitHub).
+# Name must match the existing worker: e-invois.mykira.workers.dev
+
+name = "e-invois"
+main = "worker/src/index.ts"
+compatibility_date = "2024-12-01"
+
+# Static assets (built by `npm run build`)
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+# API requests hit the Worker script first; everything else is served from assets
+run_worker_first = ["/api/*"]
+
+# D1 Database Binding
+[[d1_databases]]
+binding = "DB"
+database_name = "einvois-db"
+database_id = "36e6ad4d-a715-4f2b-8b4a-70ecc5c05fde"
+
+# Environment variables
+[vars]
+APP_NAME = "e-Invois Sabah"
+SST_RATE = "0.08"

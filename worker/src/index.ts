@@ -22,9 +22,13 @@
 
 export interface Env {
   DB: D1Database;
+  ASSETS?: Fetcher;
 }
 
 interface InvoicePayload {
+  id?: string;
+  createdAt?: string;
+  status?: string;
   invoiceNo: string;
   date: string;
   dueDate: string;
@@ -107,6 +111,11 @@ export default {
         return await handleSaveSeller(request, env, corsHeaders);
       }
 
+      // Non-API routes: serve static assets (fallback when run_worker_first is not configured)
+      if (env.ASSETS && !path.startsWith('/api/')) {
+        return env.ASSETS.fetch(request);
+      }
+
       return new Response(JSON.stringify({ error: 'Not Found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -131,8 +140,10 @@ async function handleListInvoices(env: Env, headers: Record<string, string>): Pr
 
 async function handleCreateInvoice(request: Request, env: Env, headers: Record<string, string>): Promise<Response> {
   const payload: InvoicePayload = await request.json();
-  const id = generateId();
-  const now = new Date().toISOString();
+  // Preserve the client-generated ID so offline-first sync doesn't duplicate invoices
+  const id = payload.id || generateId();
+  const now = payload.createdAt || new Date().toISOString();
+  const status = payload.status || 'draft';
 
   await env.DB.prepare(`
     INSERT INTO invoices (id, invoice_no, date, due_date, seller, buyer, items, subtotal, sst, total, notes, type, status, created_at)
@@ -150,7 +161,7 @@ async function handleCreateInvoice(request: Request, env: Env, headers: Record<s
     payload.total,
     payload.notes,
     payload.type,
-    'draft',
+    status,
     now
   ).run();
 
@@ -171,7 +182,7 @@ async function handleUpdateInvoice(id: string, request: Request, env: Env, heade
   await env.DB.prepare(`
     UPDATE invoices SET
       invoice_no = ?, date = ?, due_date = ?, seller = ?, buyer = ?,
-      items = ?, subtotal = ?, sst = ?, total = ?, notes = ?, type = ?
+      items = ?, subtotal = ?, sst = ?, total = ?, notes = ?, type = ?, status = ?
     WHERE id = ?
   `).bind(
     payload.invoiceNo,
@@ -185,6 +196,7 @@ async function handleUpdateInvoice(id: string, request: Request, env: Env, heade
     payload.total,
     payload.notes,
     payload.type,
+    payload.status || 'draft',
     id
   ).run();
 

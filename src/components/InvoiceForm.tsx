@@ -9,6 +9,7 @@ import {
   getDefaultBuyer,
   formatCurrency,
 } from '../utils/storage';
+import { pushInvoice, syncSellerInfo, fetchSellerInfo } from '../utils/api';
 
 interface Props {
   onPreview: (invoice: Invoice) => void;
@@ -41,8 +42,13 @@ export default function InvoiceForm({ onPreview, editInvoice }: Props) {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+    // Local first (instant), then cloud (first visit on a new device)
     const savedSeller = getSellerInfo();
     if (savedSeller) setSeller(savedSeller);
+    fetchSellerInfo().then(cloudSeller => {
+      if (!cancelled && cloudSeller) setSeller(cloudSeller);
+    });
     if (editInvoice) {
       setSeller(editInvoice.seller);
       setBuyer(editInvoice.buyer);
@@ -53,6 +59,9 @@ export default function InvoiceForm({ onPreview, editInvoice }: Props) {
       setNotes(editInvoice.notes);
       setInvoiceType(editInvoice.type);
     }
+    return () => {
+      cancelled = true;
+    };
   }, [editInvoice]);
 
   const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
@@ -80,7 +89,7 @@ export default function InvoiceForm({ onPreview, editInvoice }: Props) {
   };
 
   const handleSaveSeller = () => {
-    saveSellerInfo(seller);
+    syncSellerInfo(seller);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -100,10 +109,12 @@ export default function InvoiceForm({ onPreview, editInvoice }: Props) {
       notes,
       type: invoiceType,
       status: 'draft',
-      createdAt: new Date().toISOString(),
+      createdAt: editInvoice?.createdAt || new Date().toISOString(),
     };
     saveInvoice(invoice);
     saveSellerInfo(seller);
+    // Mirror to the cloud (D1) in the background — offline-first, never blocks
+    void pushInvoice(invoice);
     if (preview) {
       onPreview(invoice);
     }

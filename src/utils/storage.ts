@@ -28,6 +28,11 @@ export function deleteInvoice(id: string): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
 }
 
+/** Replace the entire local invoice list (used by cloud sync merge). */
+export function replaceAllInvoices(invoices: Invoice[]): void {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
+}
+
 export function getInvoiceById(id: string): Invoice | undefined {
   return getInvoices().find(i => i.id === id);
 }
