@@ -33,6 +33,16 @@ export function replaceAllInvoices(invoices: Invoice[]): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
 }
 
+/** Update an invoice's status locally. Returns the updated invoice. */
+export function updateInvoiceStatus(id: string, status: Invoice['status']): Invoice | undefined {
+  const invoices = getInvoices();
+  const inv = invoices.find(i => i.id === id);
+  if (!inv) return undefined;
+  inv.status = status;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
+  return inv;
+}
+
 export function getInvoiceById(id: string): Invoice | undefined {
   return getInvoices().find(i => i.id === id);
 }

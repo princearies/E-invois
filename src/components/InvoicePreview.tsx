@@ -2,6 +2,7 @@ import React from 'react';
 import { Invoice } from '../types';
 import { formatCurrency, formatDate } from '../utils/storage';
 import { generatePDF, getShareURL } from '../utils/pdf';
+import { setInvoiceStatus, statusLabel, statusClasses } from '../utils/api';
 
 interface Props {
   invoice: Invoice;
@@ -9,6 +10,13 @@ interface Props {
 }
 
 export default function InvoicePreview({ invoice, onBack }: Props) {
+  const [status, setStatus] = React.useState<Invoice['status']>(invoice.status);
+
+  const handleMarkPaid = () => {
+    const updated = setInvoiceStatus(invoice.id, 'paid');
+    if (updated) setStatus('paid');
+  };
+
   const handleDownloadPDF = () => {
     generatePDF(invoice);
   };
@@ -77,8 +85,8 @@ export default function InvoicePreview({ invoice, onBack }: Props) {
                 </div>
               )}
             </div>
-            <span className="px-2.5 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
-              Draf
+            <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${statusClasses(status)}`}>
+              {statusLabel(status)}
             </span>
           </div>
         </div>
@@ -195,6 +203,14 @@ export default function InvoicePreview({ invoice, onBack }: Props) {
         >
           💬 Kongsi WhatsApp
         </button>
+        {status !== 'paid' && (
+          <button
+            onClick={handleMarkPaid}
+            className="col-span-2 py-3 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-500 transition-all active:scale-[0.98]"
+          >
+            💰 Tanda Sudah Bayar
+          </button>
+        )}
       </div>
     </div>
   );

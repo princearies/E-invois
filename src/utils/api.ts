@@ -3,6 +3,7 @@ import {
   getInvoices,
   getInvoiceById,
   replaceAllInvoices,
+  updateInvoiceStatus,
   getSellerInfo,
   saveSellerInfo as saveSellerLocal,
 } from './storage';
@@ -116,6 +117,39 @@ export async function deleteInvoiceRemote(id: string): Promise<boolean> {
   } catch (err) {
     console.warn('[e-invois] Cloud sync (delete) failed:', err);
     return false;
+  }
+}
+
+/**
+ * Mark an invoice's status (e.g. 'paid') locally and mirror to the cloud.
+ * Returns the updated invoice, or undefined if not found.
+ */
+export function setInvoiceStatus(id: string, status: Invoice['status']): Invoice | undefined {
+  const updated = updateInvoiceStatus(id, status);
+  if (updated) void pushInvoice(updated);
+  return updated;
+}
+
+/** Display helpers for invoice status. */
+export function statusLabel(status: Invoice['status']): string {
+  switch (status) {
+    case 'paid':
+      return 'Sudah Bayar';
+    case 'issued':
+      return 'Dihantar';
+    default:
+      return 'Draf';
+  }
+}
+
+export function statusClasses(status: Invoice['status']): string {
+  switch (status) {
+    case 'paid':
+      return 'bg-emerald-900/30 text-emerald-300';
+    case 'issued':
+      return 'bg-sky-900/30 text-sky-300';
+    default:
+      return 'bg-amber-900/30 text-amber-300';
   }
 }
 

@@ -1,15 +1,30 @@
 import React from 'react';
 import { Invoice } from '../types';
 import { deleteInvoice, formatCurrency, formatDate } from '../utils/storage';
-import { syncInvoices, deleteInvoiceRemote } from '../utils/api';
+import { syncInvoices, deleteInvoiceRemote, setInvoiceStatus, statusLabel, statusClasses } from '../utils/api';
 
 interface Props {
   onPreview: (invoice: Invoice) => void;
   onEdit: (invoice: Invoice) => void;
 }
 
+type Filter = 'all' | 'unpaid' | 'paid';
+
+const filterOptions: Array<{ key: Filter; label: string }> = [
+  { key: 'all', label: 'Semua' },
+  { key: 'unpaid', label: 'Belum Bayar' },
+  { key: 'paid', label: 'Sudah Bayar' },
+];
+
+function matchesFilter(invoice: Invoice, filter: Filter): boolean {
+  if (filter === 'paid') return invoice.status === 'paid';
+  if (filter === 'unpaid') return invoice.status !== 'paid';
+  return true;
+}
+
 export default function InvoiceList({ onPreview, onEdit }: Props) {
   const [invoices, setInvoices] = React.useState<Invoice[]>([]);
+  const [filter, setFilter] = React.useState<Filter>('all');
   const [loading, setLoading] = React.useState(true);
   const [synced, setSynced] = React.useState(false);
 
@@ -34,6 +49,15 @@ export default function InvoiceList({ onPreview, onEdit }: Props) {
     }
   };
 
+  const handleMarkPaid = (id: string) => {
+    const updated = setInvoiceStatus(id, 'paid');
+    if (updated) {
+      setInvoices(prev => prev.map(i => (i.id === id ? { ...i, status: 'paid' } : i)));
+    }
+  };
+
+  const filtered = invoices.filter(inv => matchesFilter(inv, filter));
+
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-12 text-center">
@@ -55,9 +79,9 @@ export default function InvoiceList({ onPreview, onEdit }: Props) {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <h2 className="text-lg font-semibold text-slate-200">
-          Senarai Invois ({invoices.length})
+          Senarai Invois ({filtered.length})
         </h2>
         <span
           className={`text-[10px] px-2 py-1 rounded-full font-medium ${
@@ -74,8 +98,32 @@ export default function InvoiceList({ onPreview, onEdit }: Props) {
           {synced ? '☁️ Disegerak' : '⚠️ Peranti sahaja'}
         </span>
       </div>
+
+      {/* Status filter */}
+      <div className="flex gap-2 mb-4">
+        {filterOptions.map(f => (
+          <button
+            key={f.key}
+            onClick={() => setFilter(f.key)}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+              filter === f.key
+                ? 'bg-sky-900/50 text-sky-300 border border-sky-700'
+                : 'bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:border-slate-600'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {filtered.length === 0 && (
+        <div className="text-center py-8">
+          <p className="text-sm text-slate-500">Tiada invois dalam penapis ini.</p>
+        </div>
+      )}
+
       <div className="space-y-3">
-        {invoices.map(invoice => (
+        {filtered.map(invoice => (
           <div
             key={invoice.id}
             className="bg-slate-800/50 rounded-2xl p-4 border border-slate-700/50 hover:border-slate-600 transition-all"
@@ -100,10 +148,19 @@ export default function InvoiceList({ onPreview, onEdit }: Props) {
               }`}>
                 {invoice.type === 'consolidated' ? 'Consolidated' : 'Standard'}
               </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-900/30 text-amber-300">
-                Draf
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${statusClasses(invoice.status)}`}>
+                {statusLabel(invoice.status)}
               </span>
               <div className="flex-1" />
+              {invoice.status !== 'paid' && (
+                <button
+                  onClick={() => handleMarkPaid(invoice.id)}
+                  title="Tanda invois ini sebagai sudah bayar"
+                  className="px-3 py-1.5 bg-emerald-900/30 text-emerald-300 rounded-lg text-xs font-medium hover:bg-emerald-900/50 transition-all"
+                >
+                  💰 Tanda Bayar
+                </button>
+              )}
               <button
                 onClick={() => onPreview(invoice)}
                 className="px-3 py-1.5 bg-sky-900/30 text-sky-300 rounded-lg text-xs font-medium hover:bg-sky-900/50 transition-all"
