@@ -7,7 +7,6 @@ import {
   getSellerInfo,
   saveSellerInfo as saveSellerLocal,
 } from './storage';
-import { createReceiptJournal } from './kira';
 
 /**
  * Cloud sync layer (offline-first).
@@ -129,8 +128,6 @@ export function setInvoiceStatus(id: string, status: Invoice['status']): Invoice
   const updated = updateInvoiceStatus(id, status);
   if (updated) {
     void pushInvoice(updated);
-    // Auto-journal to Kira Enterprise on payment (Dr Bank / Cr AR)
-    if (status === 'paid') void createReceiptJournal(updated);
   }
   return updated;
 }

@@ -2,7 +2,6 @@ import React from 'react';
 import { Invoice } from '../types';
 import { deleteInvoice, formatCurrency, formatDate } from '../utils/storage';
 import { syncInvoices, deleteInvoiceRemote, setInvoiceStatus, statusLabel, statusClasses } from '../utils/api';
-import { journalState } from '../utils/kira';
 
 interface Props {
   onPreview: (invoice: Invoice) => void;
@@ -152,14 +151,6 @@ export default function InvoiceList({ onPreview, onEdit }: Props) {
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${statusClasses(invoice.status)}`}>
                 {statusLabel(invoice.status)}
               </span>
-              {journalState(invoice.id).sale && (
-                <span
-                  className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-indigo-900/30 text-indigo-300"
-                  title="Jurnal jualan telah dicipta di Kira Enterprise"
-                >
-                  📚 Jurnal
-                </span>
-              )}
               <div className="flex-1" />
               {invoice.status !== 'paid' && (
                 <button
