@@ -10,6 +10,13 @@ import {
   formatCurrency,
 } from '../utils/storage';
 import { pushInvoice, syncSellerInfo, fetchSellerInfo } from '../utils/api';
+import {
+  fetchKiraCompanies,
+  getKiraCompany,
+  setKiraCompany,
+  createSaleJournal,
+  type KiraCompany,
+} from '../utils/kira';
 
 interface Props {
   onPreview: (invoice: Invoice) => void;
@@ -40,6 +47,8 @@ export default function InvoiceForm({ onPreview, editInvoice }: Props) {
   const [notes, setNotes] = useState('');
   const [invoiceType, setInvoiceType] = useState<'standard' | 'consolidated'>('standard');
   const [saved, setSaved] = useState(false);
+  const [kiraCompanies, setKiraCompanies] = useState<KiraCompany[]>([]);
+  const [kiraCompany, setKiraCompanyState] = useState<string>(getKiraCompany());
 
   useEffect(() => {
     let cancelled = false;
@@ -63,6 +72,22 @@ export default function InvoiceForm({ onPreview, editInvoice }: Props) {
       cancelled = true;
     };
   }, [editInvoice]);
+
+  // Load Kira Enterprise company list for auto-journal integration
+  useEffect(() => {
+    let cancelled = false;
+    fetchKiraCompanies().then(companies => {
+      if (!cancelled) setKiraCompanies(companies);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleKiraCompanyChange = (code: string) => {
+    setKiraCompanyState(code);
+    setKiraCompany(code);
+  };
 
   const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
   const sst = subtotal * 0.08;
@@ -115,6 +140,8 @@ export default function InvoiceForm({ onPreview, editInvoice }: Props) {
     saveSellerInfo(seller);
     // Mirror to the cloud (D1) in the background — offline-first, never blocks
     void pushInvoice(invoice);
+    // Auto-journal to Kira Enterprise (only for newly created invoices)
+    if (!editInvoice) void createSaleJournal(invoice);
     if (preview) {
       onPreview(invoice);
     }
@@ -147,6 +174,33 @@ export default function InvoiceForm({ onPreview, editInvoice }: Props) {
             📋 Consolidated
           </button>
         </div>
+      </div>
+
+      {/* Kira Enterprise Integration */}
+      <div className="bg-slate-800/50 rounded-2xl p-5 border border-slate-700/50">
+        <h3 className="text-sm font-semibold text-slate-300 mb-1">📊 Jurnal Automatik (Kira Enterprise)</h3>
+        <p className="text-xs text-slate-500 mb-3">
+          Pilih syarikat anda di Kira Enterprise. Setiap invois akan mencipta
+          jurnal jualan (Dr Akaun Belum Terima / Cr Jualan + SST) secara automatik,
+          dan jurnal bayaran (Dr Bank / Cr Akaun Belum Terima) bila ditanda bayar.
+        </p>
+        <select
+          value={kiraCompany}
+          onChange={e => handleKiraCompanyChange(e.target.value)}
+          className="w-full px-3 py-2.5 rounded-xl bg-slate-900/50 border border-slate-700 text-slate-200 text-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-900/50 transition-all"
+        >
+          <option value="">— Tiada (jurnal dilumpuhkan) —</option>
+          {kiraCompanies.map(c => (
+            <option key={c.client_id} value={c.client_id}>
+              {c.entity_name || c.client_id} ({c.client_id})
+            </option>
+          ))}
+        </select>
+        {kiraCompanies.length === 0 && (
+          <p className="text-xs text-amber-400/80 mt-2">
+            ⚠️ Tidak dapat menyambung ke Kira Enterprise — semak sambungan anda.
+          </p>
+        )}
       </div>
 
       {/* Invoice Details */}
